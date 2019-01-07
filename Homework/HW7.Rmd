@@ -1,0 +1,61 @@
+---
+title: "Homework#7"
+author: "Zhijian Liu"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+```
+
+## 9.18
+### (a)
+```{r a, echo=F, warning=F}
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  9 Data Sets/CH09PR10.txt")
+colnames(df) <- c("Y","X1","X2","X3","X4")
+#scope
+null <- lm(Y~1, data=df)
+full <- lm(Y~., data=df)
+#fit the simplest model
+step(null, scope=list(lower=null, upper=full), direction="forward", data=df, alpha = 0.05)
+```
+
+The subset model is Y vs. ($X_1$, $X_3$, $X_4$).
+
+### (b)
+#### i. Selected subset model
+
+```{r b (i), echo=F, warning=F}
+#Find/Compute R2, adjusted-R2, Mallow’s Cp, AIC, SBC(i.e., BIC), PRESS for the final model that you selected.
+#model
+reg <- lm(Y~.-X2, data=df)
+#selection cretiria
+selcri<-function(lmout) {
+  n <- length(lmout$fit)
+  rsq <- summary(lmout)$r.sq #find larger
+  adj.rsq <- summary(lmout)$adj.r.sq #find larger
+  #cp
+  p <- length(coef(lmout))
+  cp <- anova(lmout)$'Sum Sq'[p]/anova(full)$'Mean Sq'[5] - (length(lmout$fit) - 2*p) #find smaller
+  aic <- extractAIC(lmout)[2] #find smaller
+  bic <- extractAIC(lmout, k = log(n))[2] #find smaller
+  press <- sum((lmout$residuals/(1 - hatvalues(lmout)))^2) #find smaller
+  rbind('$R^2$'=rsq, '$R_{adjusted}^2$'=adj.rsq, 'Mallow’s $C_p$'=cp, 'AIC'=aic, 'BIC'=bic, 'PRESS'=press)
+}
+selcri(reg) %>% kable("latex", escape = F) 
+```
+
+#### ii. Full model
+
+```{r b (ii), echo=F, warning=F}
+#Find/Compute R2, adjusted-R2, Mallow’s Cp, AIC, SBC(i.e., BIC), PRESS for the regression model that includes the first order terms of all 4 predictors.
+
+#selection cretiria
+selcri(full) %>% kable("latex", escape = F)
+```
+
+#### iii.
+Comparing these 2 models, no obvious difference exists for $R^2$ and $R_{adjusted}^2$. But other criterias, Mallow’s $C_p$, AIC, BIC and PRESS, appear to be lower for the subset model i selected in (a). So in sum, this selected subset model performs better.

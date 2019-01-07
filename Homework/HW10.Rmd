@@ -1,0 +1,65 @@
+---
+title: "Homework#10"
+author: "Zhijian Liu"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F)
+library(lmtest)
+```
+
+```{r read, include = F}
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter 14 Data Sets/CH14PR13.txt")
+colnames(df) <- c("Y","X1","X2")
+#Y: whether the family actually purchased a new car (Y=1)
+#X1: annual family income
+#X2: the current age of the oldest family automobile 
+```
+## 14.13
+### a
+```{r 14.13 a}
+glm <- glm(Y~X1+X2, data = df, family = "binomial")
+summary(glm)
+```
+
+The fitted model: $logit(newcar)= -4.73931 +0.06773 \cdot mobileage+ 0.59863 \cdot income$
+
+### b
+```{r 14.13 b}
+exp(glm$coef)
+```
+
+Keeping other factors constant, when annual family income increases by one unit, log-odds for the family to buy a new car increases 1.070079093. Also, adjusting for annual family income, when the current age of the oldest family automobile increases by one unit, log-odds for the family to buy a new car increases 1.819627221.
+
+### c
+```{r 14.13 c}
+predict(glm, newdata=data.frame(X1=50, X2=3), type="response") #predicted probabilities
+```
+
+The estimated probability of this new family to buy a new car is 0.6090245.
+
+
+
+## 14.19
+### a
+```{r 14.19 a}
+alpha <- 0.1
+g <- 2
+alpha.star <- alpha/g
+exp(20*confint.default(glm,"X1",level = 1-alpha.star))
+exp(2*confint.default(glm,"X2",level = 1-alpha.star))
+```
+
+With the family confidence level set as 0.9, the confidence interval for the odd ratio for families whose incomes differ by 20 thousand dollars is (1.290263, 11.6401), and for the odd ratio for families whose oldest automobiles differ in age by 2 years is (0.7176559, 15.27613).
+
+### b
+```{r 14.19 b}
+coeftest(glm)
+```
+
+For $logit(Y) = \beta_0 +\beta_1 \cdot X_1 +\beta_2 \cdot X_2$  
+$H_0$: $\beta_2 = 0$  
+$H_A$: $\beta_2 \ne 0$  
+If the p-value is less than 0.05, reject the null hypothesis and conclude that $X_2$, age of oldest family automobile, cannot be dropped out of the model. If the p-value is larger than 0.05, fail to reject the null hypothesis and conclude that $X_2$ can be dropped out of the model.  
+The p-value from the result is 0.12486 > 0.1. So we fail to reject the null hypothesis and conclude that $X_2$, age of oldest family automobile, can be dropped out of the model.

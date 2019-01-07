@@ -1,0 +1,152 @@
+---
+title: "Homework#3"
+author: "Zhijian Liu"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/zl1409a/Desktop")
+```
+
+### 1
+```{r include=FALSE}
+df <- read.table("C:/Users/zl1409a/Desktop/CH01PR20.txt")
+colnames(df) <- c("Time","Copiers")
+attach(df)
+```
+#### 3.4(c) Histogram for the residuals 
+```{r 3.4(c), echo=FALSE}
+reg.co <- lm(Time~Copiers)
+hist(reg.co$resi, xlab = "Residuals", ylab = "Frequency", 
+     main = "Histogram of residuals")
+```
+
+The skewed pattern in the histogram indicates a violation of normality of residuals. Also outliers may exist.
+
+#### 3.4(d)
+```{r 3.4(d), echo=FALSE}
+#y hat
+df$pred <- vector("double", nrow(df))
+for (i in 1:nrow(df)){
+  df$pred[i] <- predict(reg.co, newdata=data.frame(Copiers=df$Copiers[i]))
+}
+#plot
+par(mfrow=c(1,2))
+plot(Copiers, reg.co$resi,xlab = "Residuals", ylab = "Copiers", 
+     main = "Residuals vs. X")
+abline(0,0) 
+plot(df$pred, reg.co$resi,xlab = "Residuals", ylab = "Time", 
+     main = "Residuals vs. Yhat")
+abline(0,0) 
+```
+
+These plots provide the same information. Outliers exist in the residual plot. Also variance seems non-constant and the non-rectangle shape of residuals violates the linearity property of the normal error regression model.
+
+#### 3.4(h)
+```{r 3.4(h), echo=FALSE, warning=FALSE}
+df <- read.table("C:/Users/zl1409a/Desktop/CH03PR04.txt")
+colnames(df) <- c("Time","Copiers","X2","X3")
+#plot
+par(mfrow=c(1,2))
+plot(df$X2, reg.co$resi,xlab = "Residuals", ylab = "X2", 
+     main = "Residuals vs. X2",data=df)
+abline(0,0) 
+plot(df$X3, reg.co$resi,xlab = "Residuals", ylab = "X3", 
+     main = "Residuals vs. X3",data=df)
+abline(0,0)
+```
+
+The model can be improved by including varible X2. The residual plot against X2 shows a rough linear pattern in the residuals. That means some linear association exists between X2 and response variable. While the residual plot against X3 shows no obvious pattern. Including X3 in the model will not help to explain more variation of response variable. So i suggest that including X2 can help to improve the model .
+
+#### 3.4(e) Prepare a Normal Q-Q plot for the residuals and comment. Use statistical software to conduct test(s) to check the normality assumption of the residuals at $\alpha$ = 0.10.
+```{r 3.4(e), echo=FALSE, warning=FALSE}
+#normal qq plot
+qqnorm(reg.co$resi) 
+qqline(reg.co$resi)
+```
+
+The spots from two sides deviate from the normal line. It indicates that the the normality of residuals may be violated.
+
+```{r 3.4(e)2, echo=FALSE, warning=FALSE}
+#shapiro test
+shapiro.test(reg.co$residuals)
+```
+
+Under the significance level of 10%, the test shows no significant evidence to support the non-normality of residuals. So we can believe that the residuals are normally distributed.
+
+### 2.
+$H_0$: The linear model fits the data  
+$H_A$: The linear model does not fit the data
+
+If P-value < 0.05, reject $H_0$ and there is significant evidence to support	$H_A.$  
+If P-value > 0.05, do not reject $H_0$ and there is no significant evidence to support	$H_A$.  
+We have $SS_{PE} = 2797.658$, $df_{PE} = 45 - 10 = 35$.  
+So $SS_{LF} = SS_E - SS_{PE} = 3416.377 - 2797.658 = 618.719$, $df_{LF}=10-2=8$.  
+Then $$MS_{LF}= \frac {SS_{LF}}{df_{LF}}=\frac {618.719}{8}=77.33988$$
+$$MS_{PE}= \frac {SS_{PE}}{df_{PE}}=\frac {2797.658}{35}=79.93309$$  
+F statistic: $F_{(8,35)}=\frac {MS_{LF}}{MS_{PE}}=\frac{77.34}{79.9}=0.96796$. $P(F_{obs}>F_{\alpha})= 0.4763503 > 0.05$. So we do not reject $H_0$ and there is no significant evidence to support	$H_A$. We can conclude that the estimated linear model fits the data.
+
+#### software test
+```{r 2.test, echo=FALSE}
+lof.co<-lm(Time ~ as.factor(Copiers), data=df) #as.factor(predictor)
+anova(reg.co, lof.co)
+```
+
+The test from software suggests the same result.
+
+### 3.
+```{r 3.17, include=FALSE}
+rm(list=ls())
+df <- read.table("C:/Users/zl1409a/Desktop/CH03PR17.txt")
+colnames(df) <- c("Sales","Year") #y=sales in thousands
+attach(df)
+```
+#### (a)
+```{r 3.17(a), echo=FALSE, warning=FALSE}
+plot(Year,Sales)
+```
+
+The data appears to be linearly related.
+
+#### (c)
+```{r 3.17(c), echo=FALSE, warning=FALSE}
+reg1 <- lm(sqrt(Sales)~Year)
+arm::display(reg1)
+```
+
+The estimated model: $\hat{\sqrt{Sale}} = 10.26 + 1.08\cdot Year$
+
+#### (d)
+```{r 3.17(d), echo=FALSE, warning=FALSE}
+df$tran_Sales <- sqrt(Sales)
+plot(Year, df$tran_Sales, ylab = "sqrt(Sales)")
+curve(cbind(1,x) %*% coef(reg1), add= TRUE)
+```
+
+The regression line seems to be a good fit to the transformed data.
+
+#### (e)
+```{r 3.17(e), echo=FALSE, warning=FALSE}
+#y hat
+df$pred <- vector("double", nrow(df))
+for (i in 1:nrow(df)){
+  df$pred[i] <- predict(reg1, newdata=data.frame(Year=df$Year[i]))
+}
+#residual plot
+par(mfrow=c(1,2))
+plot(df$pred, reg1$resi,xlab = "Residuals", ylab = "fiitted values", 
+     main = "Residuals vs. fiitted values")
+abline(0,0) 
+#normal qq plot
+qqnorm(reg1$resi) 
+qqline(reg1$resi)
+```
+
+The residual plot shows roughly no pattern, no outlier and constant variance. The qqplot shows a approximate normality of residuals. But we cannot read reliable information from these plots since the sample size is too small.
+
+#### (f)
+The estimated regression function in the original units:
+$$\hat{Sale} = 105.2676 + 22.1616\cdot Year + 1.1664\cdot Year^2$$

@@ -1,0 +1,359 @@
+---
+title: "Homework5"
+author: "ZhijianLiu"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(arm)
+library(dplyr)
+```
+
+## 6.9
+```{r 6.9 read, include=FALSE, warning=FALSE}
+gcy <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  6 Data Sets/CH06PR09.txt")
+# i = 1,...,52. represents one week of activity in a one-year period.
+#X1: the number of cases shipped
+#X2: the indirect costs of the total labor hours as a percentage
+#X3: qualitative predicteor: coded as 1 if it is holiday, 0 otherwise.
+#Y: the total labor hours
+colnames(gcy) <- c("Yi","Xi1","Xi2","Xi3")
+attach(gcy)
+```
+### (a)
+```{r 6.9(a), warning=FALSE, echo=FALSE}
+par(mfrow=c(1,2))
+hist(Xi1)
+hist(Xi2)
+```
+
+The skewed histogram of Xi1 shows that some outliers may exist in the right tail. For the histogram of Xi2, thin tail in the left side shows the possible outliers. No obvious gap exist in either plots.
+
+### (b)
+```{r 6.9(b), warning=FALSE, echo= FALSE}
+par(mfrow=c(3,1))
+plot(Xi1, type="l")
+plot(Xi2, type="l")
+plot(Xi3, type="l")
+```
+
+The time plot of Xi1 shows that the number of cases shipped dramatically increased in the fourth quarter. The time plot of Xi2 shows the fluctuation of the costs of the total labor hours mostly lied in the range bewtween 6 and 9, and shows the slightly upward trend over the year. The time plot of Xi3 shows there are 5 holiday period all over the year.
+
+### (c)
+```{r 6.9(c), warning=FALSE, echo=FALSE}
+#scatter plot matrix
+pairs(gcy)
+#correlation matrix
+cor(gcy)
+```
+
+From the scatter plot matrix, we can see no obvious pattern between predictors, in other words no obvious multicolinearity exist among predictors. In the plot $Y_i$ vs $X_{i3}$, it is very obvious that $Y_i's$ of $X_i=1$ are higher that those of $X_i=0$. Also we can derive high correlation between $X_{i3}$ and $Y_I$ from correcorrelation matrix.
+
+## 6.10
+### (a)
+```{r 6.10(a),warning=FALSE, echo=FALSE}
+reg <- lm(Yi~Xi1+Xi2+Xi3)
+reg 
+```
+The estimated regression funcion would be $Y_i=0.0007871\cdot X_{i1}-13.17\cdot X_{i2}+623.6\cdot X_{i3}+4150$.  
+$b_1$: After controlling the effects of other parameters if the number of cases shipped increases by 1 unit, the total labor hours would increase by 0.0007871.  
+$b_2$: After controlling the effects of other parameters if the indirect costs of the total labor hours increases by 1 unit, the total labor hours would decrease by 13.17.  
+$b_3$: After controlling the effects of other parameters if it is holiday, the total labor hours would increase by 623.6. 
+
+### (b)
+```{r 6.10(b),warning=FALSE, echo=FALSE}
+display(reg)
+boxplot(residuals(reg),main="residuals")
+```
+
+Residuals are ranged within 2 standard error and have a mean of 0.
+
+### (c)
+```{r 6.10(c),warning=FALSE, echo=FALSE}
+par(mfrow=c(2,3))
+plot(fitted.values(reg),residuals(reg),main="residuals vs fitted value",xlab= "fitted value", ylab="residuals") #non-constant
+plot(Xi1,residuals(reg),main="residuals vs Xi1", xlab= "Xi1", ylab="residuals") #random
+plot(Xi2,residuals(reg),main="residuals vs Xi2", xlab= "Xi2", ylab="residuals") #random
+plot(Xi3,residuals(reg),main="residuals vs Xi3", xlab= "Xi3", ylab="residuals") #random
+plot(Xi1*Xi2,residuals(reg),main="residuals vs Xi1*Xi2", xlab= "Xi1*Xi2", ylab="residuals") #random
+qqnorm(residuals(reg))
+qqline(residuals(reg))
+```
+
+The scatter plots of 'residuals vs $\hat y$', 'residuals vs $X_{i1} \cdot X_{i2}$' and 'residuals vs $ X_{i3}$' show non-constant variance. Other plots show no pattern and constant variance. QQplot shows some violation in two tails.
+
+### (d)
+```{r 6.10(d),warning=FALSE, echo=FALSE}
+plot(residuals(reg), type="l", main="Residuals vs. time")
+```
+
+From the plot we can see that there is no obvious trend. So the error terms are not correlated with time.
+
+## 6.11
+### (a)
+```{r 6.11(a),warning=FALSE, echo=FALSE}
+summary(reg)
+```
+$H_0$: there is no regression relation in our model.  
+$H_A$: At least one inequality.  
+Decision rule: If p-value < 0.05, reject the null hypothesis and conclude that at least one predictor has regression relation with the outcome variable.  
+If p-value > 0.05, do not reject the null hypothesis and conclude that there is no regression relation in the model.
+Conclusion: P-value is $3.316 \cdot10^{-12}$ which is smaller than 0.05, so there is at least one predictor, $\beta_1$, $\beta_2$ or $\beta_3$, has linear relationship with the total labor hours.
+
+### (b)
+```{r 6.11(b),warning=FALSE, echo=FALSE}
+alpha <- 0.05
+g <- 2
+p <- 4
+n <- nrow(gcy)
+alpha_ast <- alpha/g
+#find critical value
+t <- qt(1-alpha_ast/2, n-p)
+knitr::kable(cbind(c("$\\alpha$","g","n","t"),c(alpha,g,n,t)), digits =3)
+#CI
+display(reg)
+sigma_hat <- summary(reg)$coefficients[ , 2]
+lower_bound <- reg$coef - t*sigma_hat
+upper_bound <- reg$coef + t*sigma_hat
+knitr::kable(cbind(Copiers=c("$\\beta_0$","$\\beta_1$","$\\beta_2$","$\\beta_3$"),lower_bound,upper_bound),digits =3)
+```
+
+Under the Bonferroni procedure, the confidence interval for $\beta_1$ is (0, 0.00163), for $\beta_3$ is (478.6096, 768.4993).
+
+### (c)
+```{r 6.11(c),warning=FALSE, echo=FALSE}
+display(reg)
+```
+R squared is 0.69. In this case, 69% of the variance in $Y_i$ could be explained by the model constructed with $X_{i1}$, $X_{i2}$ and $X_{i3}$.
+
+## 6.12
+### (a)
+```{r 6.12, warning=FALSE, echo=FALSE}
+alpha <- 0.05
+g <- 5
+p <- 4
+n <- nrow(gcy)
+alpha_ast <- alpha/g
+#find critical value
+t <- qt(1-alpha_ast/2, n-p)
+f <- qf(1-alpha,p,n-p, lower.tail = T)
+w <- sqrt(p*f)
+knitr::kable(cbind(c("$\\alpha$","g","n","t","W"),c(alpha,g,n,t,w)), digits =3)
+df_pre <- data.frame(Xi1=c(302000,245000,280000,350000,295000),
+                     Xi2=c(7.2,7.4,6.9,7.0,6.7),
+                     Xi3=c(0,0,0,0,1))
+sigma_hat <- predict(reg, newdata=df_pre,
+                     se.fit = T)$se.fit
+muy <- function(Xi1,Xi2,Xi3){
+  as.numeric(cbind(1,Xi1,Xi2,Xi3) %*% reg$coef)
+}
+#find mu_y
+mu_y_hat <- muy(df_pre$Xi1, df_pre$Xi2, df_pre$Xi3)
+#chart
+knitr::kable(data.frame('Shipments'=c(1,2,3,4,5),"mu"= mu_y_hat, 'sigma'= sigma_hat), digits =3)
+```
+
+Since $t=2.196$ is less than $W=3.203$, the Bonferroni procedure will provide narrower confidence intervals. So the Working-hotelling procedure is more efficient.
+
+#### Bonferroni procedure
+```{r 6.12 Working-hotelling, warning=FALSE, echo=FALSE}
+lower_bound <- mu_y_hat - w*sigma_hat
+upper_bound <- mu_y_hat + w*sigma_hat
+knitr::kable(cbind('Shipments'=c(1,2,3,4,5),lower_bound,upper_bound),digits =3)
+```
+
+Under the Bonferroni procedure, the according 95% confidence intervals (4224.379, 4361.201), (4150.150, 4340.437), (4201.122, 4357.726), (4240.535, 4425.872), (4717.214, 5117.622).
+
+### (b)
+```{r 6.12 (b), warning=FALSE, echo=FALSE}
+pairs(gcy[,c("Xi1","Xi2","Xi3")])
+```
+
+The shipment of 400000 cases with an indirect percentage of 7.2 on nonholiday week is within the slope of the model. The shipment of 400000 cases with an indirect percentage of 9.9 on nonholiday week is without the slope of the model.
+
+## 6.13
+Before predicting the outcome variable, we check the possible extrapolitan first.
+
+```{r 6.13 extrapolitan, echo=FALSE}
+#pair plot
+pairs(gcy[,c("Xi1","Xi2","Xi3")])
+```
+
+New predictor value lies in the slope of the model.
+
+```{r 6.13, warning=FALSE, echo=FALSE}
+alpha <- 0.05
+g <- 4
+p <- 4
+n <- nrow(gcy)
+alpha_ast <- alpha/g
+#find critical value
+t <- qt(1-alpha_ast/2, n-p)
+f <- qf(1-alpha,g,n-p, lower.tail = T)
+s <- sqrt(g*f)
+knitr::kable(cbind(c("$\\alpha$","g","n","t","S"),c(alpha,g,n,t,s)), digits =3)
+df_pre <- data.frame(Xi1=c(230000,250000,280000,340000),
+                     Xi2=c(7.5,7.3,7.1,6.9),
+                     Xi3=c(0,0,0,0))
+sigma_hat <- predict(reg, newdata=df_pre,
+                     se.fit = T)$se.fit
+muy <- function(Xi1,Xi2,Xi3){
+  as.numeric(cbind(1,Xi1,Xi2,Xi3) %*% reg$coef)
+}
+#find mu_y
+mu_y_hat <- muy(df_pre$Xi1, df_pre$Xi2, df_pre$Xi3)
+sigma_ind_hat = sqrt(sigma_hat^2 + anova(reg)$'Mean Sq'[4])
+#chart
+knitr::kable(data.frame('Shipments'=c(1,2,3,4),"mu"= mu_y_hat, 'sigma'= sigma_ind_hat), digits =3)
+```
+
+Since $t=2.5953$ has the least value, the Bonferroni procedure will provide the narrowest confidence intervals. So the Bonferroni procedure will be employed.
+
+#### Bonferroni procedure
+```{r 6.13 Bonferroni procedure, warning=FALSE, echo=FALSE}
+lower_bound <- mu_y_hat - t*sigma_ind_hat
+upper_bound <- mu_y_hat + t*sigma_ind_hat
+knitr::kable(cbind('Shipments'=c(1,2,3,4),lower_bound,upper_bound),digits =3)
+```
+
+Under the Bonferroni procedure, the according 95% prediction intervals (3849.911,4614.430), (3871.478,4629.613), (3900.122,4653.460), (3947.913,4705.385).
+
+## 6.14
+### (a)
+```{r 6.14 , warning=FALSE, echo=FALSE}
+alpha <- 0.05
+p <- 4
+g <- 3
+n <- nrow(gcy)
+alpha_ast <- alpha/g
+#find critical value
+t <- qt(1-alpha_ast/2, n-p)
+f <- qf(0.9,p,n-p, lower.tail = T)
+w <- sqrt(p*f)
+knitr::kable(cbind(c("$\\alpha$","g","n","t","W"),c(alpha,g,n,t,s)), digits =3)
+#predict
+df_pre <- data.frame(Xi1=c(282000, 282000,282000),
+                           Xi2=c(7.1,7.1,7.1), 
+                           Xi3=c(0,0,0))
+mu_y_hat <- muy(df_pre$Xi1, df_pre$Xi2, df_pre$Xi3)
+sigma_hat <- predict(reg, newdata=df_pre,
+                     se.fit = T)$se.fit
+#chart
+knitr::kable(data.frame('Shipments'=c(1,2,3),"mu"= mu_y_hat, 'sigma'= sigma_hat), digits =3)
+```
+
+Since $W=3.20327$ is less than $t=2.48078$, the Bonferroni procedure will provide narrower confidence intervals. So the Bonferroni procedure is applied.  
+
+#### Bonferroni procedure
+```{r 6.14(a) Bonferroni, warning=FALSE, echo=FALSE}
+lower_bound <- mu_y_hat - t*sigma_hat
+upper_bound <- mu_y_hat + t*sigma_hat
+knitr::kable(cbind('Shipments'=c(1,2,3),lower_bound,upper_bound),digits =3)
+```
+
+Under the Bonferroni procedure, the according 95% confidence intervals for three new shipments are the same as
+(4221.71, 4335.02).
+
+### (b)
+```{r ,echo=FALSE}
+#find critical value
+t <- qt(1-alpha_ast/2, n-p)
+f <- qf(1-alpha,g,n-p, lower.tail = T)
+s <- sqrt(g*f)
+knitr::kable(cbind(c("t","S"),c(t,s)), digits =3)
+```
+
+Since $S=2.897271$ is less than $t=2.48078$, the Bonferroni procedure will provide narrower confidence intervals. So the Bonferroni procedure is applied.  
+
+#### Bonferroni procedure
+```{r 6.14 (b), warning=FALSE, echo=FALSE}
+sigma_ind_hat = sqrt(sigma_hat^2 + anova(reg)$'Mean Sq'[4])
+lower_bound <- mu_y_hat - t*sigma_ind_hat
+upper_bound <- mu_y_hat + t*sigma_ind_hat
+knitr::kable(cbind('Shipments'=c(1,2,3),lower_bound,upper_bound),digits =3)
+```
+
+Under the Bonferroni procedure, the according 95% prediction intervals for three new shipments are the same as
+(3918.408, 4638.322).
+
+## 7.5
+```{r 7.5 read, include=FALSE, warning=FALSE}
+rm(list=ls())
+pa <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  6 Data Sets/CH06PR15.txt")
+# i = 1,...,46. represents patients.
+#X1: patients age
+#X2: severity of illness
+#X3: anxiety level
+#Y: patient satisfaction
+colnames(pa) <- c("Yi","Xi1","Xi2","Xi3")
+attach(pa)
+```
+
+### (a)
+```{r 7.5 (a), echo=FALSE, warning=FALSE}
+#extra sum of squares
+rega1 <- lm(Yi~Xi2, data=pa) #x2
+rega2 <- lm(Yi~Xi1+Xi2, data=pa) #x2+x1
+rega3 <- lm(Yi~Xi1+Xi2+Xi3, data=pa) #x2+x1
+anova(rega1)
+anova(rega2)
+anova(rega3)
+```
+
+Extra sums of squares of the regression associated with $X_2$ is 4860.3; Given $X_2$, Extra sums of squares of the regression associated with $X_1$ is 8275.4; Given $X_1$ and $X_2$, Extra sums of squares of the regression associated with $X_3$ is 364.2.
+
+### (b)
+$H_0$: $\beta_3 = 0$  
+$H_A$: $\beta_3 \neq 0$  
+Significance level: 0.025.  
+Decision rule: If p-value < 0.025, reject the null hypothesis and conclude that anxiety level have linear relation with patient satisfaction.  
+If p-value > 0.025, do not reject the null hypothesis and conclude that anxiety level have no linear relation with patient satisfaction.  
+Conclusion: P-value of both test is $0.06468$ which is greater than 0.025, so the null hypothesis $\beta_3 = 0$ is fail to reject, and we draw a conclusion that anxiety level have no linear relation with patient satisfaction.
+```{r 7.5(b),echo=FALSE,warning=FALSE}
+n <- nrow(pa)
+#F-test
+reg5 <- lm(Yi~Xi1+Xi2, data = pa)
+regfull <- lm(Yi~Xi1+Xi2+Xi3, data = pa)
+anova(reg5, regfull)#reduced first, full model followed
+f <- anova(reg5, regfull)$F[2]
+p_f <- anova(reg5, regfull)$Pr[2] #p_f < 0.025
+#T-test
+t <- (regfull$coef[4]-0)/summary(regfull)$coef[4,2]
+p_t <- pt(t, df=n-4, lower.tail = TRUE)*2  #upper tail
+#chart
+knitr::kable(data.frame('Test'=c('T','F'),"test stat"= c(t,f), 'p-value'= c(p_t,p_f), row.names = NULL))
+```
+
+## 7.6
+$H_0$: $\beta_2 = \beta_3=0$  
+$H_A$: ALOI  
+Significance level: 0.025.  
+Decision rule: If p-value < 0.025, reject the null hypothesis and conclude that at least one of $\beta_2$ and $\beta_3$ has regression relation with the outcome variable and don't drop both of them.  
+If p-value > 0.025, do not reject the null hypothesis and conclude that none of $\beta_2$ and $\beta_3$ has regression relation with the outcome variable in the model and drop them all.  
+Conclusion: P-value of F-test is $0.02216$ which is smaller than 0.025, so at least one predictor, severity of illness or anxiety level, has linear relationship with patient satisfaction.
+```{r 7.6, echo=FALSE,warning=FALSE}
+reg2 <- lm(Yi~Xi1, data=pa)
+anova(reg2,regfull)
+```
+
+## 7.9
+$H_0$: $\beta_1 = -1, \beta_2=0$  
+$H_A$: ALOI  
+Significance level: 0.025.  
+F test statistic is calculated by $\frac {F_{obs}=(SSE_R-SSE_F)/(df_{E_F} -df_{E_R})}{SSE_F/df_{E_F} }$=0.8837939.  
+Decision rule: If p-value < 0.025, reject the null hypothesis and conclude that at least one equation, $\beta_1 = -1$ or  $\beta_2=0$, is inequal in the model .  
+If p-value > 0.025, do not reject the null hypothesis and conclude that both of the statements, $\beta_1 = -1$ and  $\beta_2=0$, is true in the model.  
+Conclusion: P-value of F-test equals 0.4207 which is greater than 0.025, so we do not reject the null hypothesis and conclude that both equations, $\beta_1 = -1$ and  $\beta_2=0$, is true in the model. In this case, severity of illness has no linear relation with patient satisfaction. Also a increase of 1 unit in patients age would correspond to a decrease of 1 unit in patient satisfaction.
+```{r 7.9, echo=FALSE,warning=FALSE}
+newY <- Yi + Xi1
+reg3 <- lm(newY~Xi3, data=pa)
+anova(reg3)
+anova(regfull)
+SSE_R <- anova(reg3)$Sum[2]
+SSE_F <- anova(regfull)$Sum[4]
+dfE_R <- anova(reg3)$Df[2]
+dfE_F <- anova(regfull)$Df[4]
+f <- (SSE_R-SSE_F)/(dfE_R-dfE_F)/(SSE_F/dfE_F)
+paste("p-value =",1-pf(f, dfE_R-dfE_F, dfE_F))
+```

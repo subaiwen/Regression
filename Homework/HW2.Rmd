@@ -1,0 +1,96 @@
+---
+title: "Homework2"
+author: "Zhijian Liu"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## 1.
+```{r include=FALSE}
+df <- read.table("C:/Users/zl1409a/Desktop/CH01PR20.txt")
+colnames(df) <- c("Time","Copiers")
+attach(df)
+```
+```{r}
+reg.co <- lm(Time~Copiers)
+plot(Time~Copiers)
+abline(reg.co$coef)
+newx<-seq(1, 10, by=0.25)
+CI<-predict(reg.co, newdata=data.frame(Copiers=newx), interval="confidence", leve=0.95)
+PI<-predict(reg.co, newdata=data.frame(Copiers=newx), interval="prediction", leve=0.95)
+lines(newx, CI[,2], lty=2, col="#800000", lwd=2)
+lines(newx, CI[,3], lty=2, col="#800000", lwd=2)
+lines(newx, PI[,2], lty=3, col="#1a53ff", lwd=2)
+lines(newx, PI[,3], lty=3, col="#1a53ff", lwd=2)
+legend(1, 160, legend=c("Reg. Line", "CI band", "PI band"),
+       col=c("black", "#800000", "#1a53ff"), lty=1:3, cex=0.8, box.lty=0)
+```
+
+## 2.
+### 1.24(b)
+```{r 1.24(b)}
+df_pre <- predict(reg.co, interval="confidence", se.fit = T, leve=0.95)[[1]] %>%
+  cbind(df,.) %>%
+  mutate(res = Time - fit)
+SSE <- sum(df_pre$res^2)
+MSE <- SSE/(nrow(df_pre)-2)
+sigma <- sqrt(MSE)
+MSE
+sigma
+```
+We have $\hat{\sigma^2} = 79.45063$, $\hat{\sigma} = 8.913508$. Minutes are the units for $\hat{\sigma}$.
+
+## 3.
+### 2.14 (a)
+```{r include=FALSE}
+rm(list=ls())
+df <- read.table("C:/Users/zl1409a/Desktop/CH01PR20.txt")
+colnames(df) <- c("Time","Copiers")
+attach(df)
+```
+```{r 2.14 (a)}
+reg.co <- lm(Time~Copiers)
+CI<-predict(reg.co, newdata=data.frame(Copiers=6), interval="confidence", leve=0.9)
+CI
+```
+The estimated mean service time on calls in which six copiers are serviced is 90% confident to range from 87.28387 minutes to 91.9788 minutes.
+
+### 2.14 (b)
+```{r 2.14 (b)}
+PI<-predict(reg.co, newdata=data.frame(Copiers=6), interval="prediction", leve=0.9)
+PI
+```
+The predicted service time on the next call in which six copiers are serviced is 90% confident to range from 74.46433 minutes to 104.7983 minutes. This prediction interval is wider than the corresponding confidence interval. And it should be wider.
+
+## 4.
+### 2.24 (b)
+```{r 2.24 (b)}
+anova(reg.co)
+```
+$H_0: \beta_1=0$ vs.  
+$H_A: \beta_1\neq0$.  
+If P-value < 0.1, reject $H_0$ and there is significant evidence to support $H_A$.  
+If P-value > 0.1, do not reject $H_0$ and there is no significant evidence to support $H_A$.  
+The p-value < 0.1 based on the output, So that I am 90% confident that there is linear association between service time and number of copiers serviced.
+
+### 2.24 (c)
+```{r 2.24 (c)}
+Rsq <- (76960)/(3416+76960)
+Rsq
+```
+From the ANOVA table, we have the Sum of Squares of Copiers equals 76960. That means the total variation in number of minute reduced by 76960 when the regression model about the number of copiers serviced is introduced.
+$\frac{SS_{reg}}{SS_{total}} = R^2 = 0.9574998$. The reduction is relatively large.  
+This measure is called coefficient of determination.
+
+### 2.24 (d)
+```{r 2.24 (d)}
+r <- sqrt(Rsq)
+r
+```
+$r = 0.9785192$, it is positive because $\beta_1$ is postive which means the positive correlation.

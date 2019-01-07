@@ -1,0 +1,140 @@
+---
+title: "Homework 9"
+author: "Zhijian Liu"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F)
+library(car)
+```
+
+## 10.17
+```{r 10.17 read, include = F}
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  6 Data Sets/CH06PR15.txt")
+#Y: patient satisfaction
+#X1: patient's age
+#X2: severity of illness
+#X3: anxiety level
+colnames(df) <- c("Y", "X1", "X2", "X3")
+```
+
+## (a)
+```{r 10.17 a}
+#scatter plot matirx
+pairs(df)
+#correlation matrix
+cor(df)
+```
+
+There is positive linear relationships bewtween $X_1$ and $X_2$, $X_2$ and $X_3$, and $X_1$ and $X_3$.
+
+## (b)
+```{r 10.17 b}
+reg <- lm(Y~X1+X2+X3, data=df)
+vif(reg)
+```
+
+The respectively VIF for $X_1$, $X_2$ and $X_3$ are 1.632296, 2.003235 and 2.009062.
+
+## 12.6
+```{r 12.6 read, include = F}
+rm(list = ls())
+#read
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  1 Data Sets/CH01PR20.txt")
+colnames(df) <- c("Time","Copiers")
+## In addition, plot the residuals and comment.
+```
+```{r 12.6}
+reg <- lm(Time ~ Copiers, data = df)
+lmtest::dwtest(reg)
+plot(df$Time, resid(reg), xlab = 'Time', ylab = 'Residuals')
+```
+
+$H_0$: $\rho$ = 0  
+$H_A$: $\rho$ > 0  
+Significance level: 0.1
+If p-value is less than 0.1, reject the null hypothesis and conclude that positive autocorrelation is present. If p-value is larger than 0.1, fail to reject the null hypothesis and conclude that positive autocorrelation is not present.
+From the result, p-value = 0.9088 > 0.1. So we fail to reject the null hypothesis and conclude that positive autocorrelation is not present.  
+Also the residual plot shows no obvious pattern.
+
+## 11.7
+```{r 11.7 read, include = F}
+rm(list = ls())
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter 11 Data Sets/CH11PR07.txt")
+#Y: The number of defective items produced by a machine
+#X: The speed setting of the machine
+colnames(df) <- c("Y","X")
+#note that the predicted (fitted) values from “regressing the squared residuals against X” are the estimated variance of the residuals. The estimated weight is 1/(estimated variance). If you get a negative value for the estimated variance, convert it to positive value by taking its absolute value.
+```
+### (a)
+```{r 11.7 a}
+reg <- lm(Y~X, data = df)
+plot(df$X, resid(reg), xlab = 'X', ylab = 'Residuals')
+```
+
+It appears to have non-constant variance.
+
+### (b)
+```{r 11.7 b, echo=T}
+reg.var1 <- lm(I(resid(reg)^2)~df$X)
+SSR.star <- anova(reg.var1)$'Sum Sq'[1]
+SSE <- anova(reg)$'Sum Sq'[2]
+n <- nrow(df)
+test.stat <- (SSR.star/2)/(SSE/n)^2
+pchisq(test.stat,1, lower.tail = F) 
+```
+
+For $log_e\sigma_{i}^2 = \gamma_0 + \gamma_1X_i$  
+$H_0$: $\gamma_1 = 0$  
+$H_A$: $\gamma_1 \ne 0$  
+The test statistics is obtained by $X_{BP}^2 = \frac{SSR^*}{2} \div (\frac{SSE}{n})^2$. If the p-value is less than 0.1, reject the null hypothesis and conclude that the variance is not constant. If the p-value is larger than 0.1, fail to reject the null hypothesis and conclude that the variance is constant.  
+The p-value from the result is 0.1975435 > 0.1. So we fail to reject the null hypothesis and conclude that the variance is constant.
+
+### (c)
+```{r 11.7 c}
+plot(df$X, resid(reg)^2, xlab = 'X', ylab = 'Residuals')
+```
+
+The variance of the error term increases as X increases.
+
+### (d)
+```{r 11.7 d}
+df$est.var1 <- as.numeric(reg.var1$fit)
+df$w1 <- 1/df$est.var1
+knitr::kable(df)
+```
+
+### (e)
+```{r 11.7 e}
+reg.wls1<-lm(Y~X, weights=w1, data=df)
+reg
+reg.wls1
+```
+
+The estimates from WLS for $\beta_0$ and $\beta_1$ are accordingly -6.2332, 0.1891. While the estimates from OLS for $\beta_0$ and $\beta_1$ are -5.7500, 0.1875.
+
+### (f)
+```{r 11.7 f}
+out.reg <- vector("list",2)
+out.reg[[1]] <- summary(reg)$call
+out.reg[[2]] <- summary(reg)$coef[,c(1,2)]
+out.reg.wls1 <- vector("list",2)
+out.reg.wls1[[1]] <- summary(reg.wls1)$call
+out.reg.wls1[[2]] <- summary(reg.wls1)$coef[,c(1,2)]
+out.reg
+out.reg.wls1
+```
+
+The standard deviation for $\beta_{w0}$ is obviously smaller, with a value of 13.168, than the standard deviation for $\beta_0$, 16.731. And the the standard deviation for $\beta_{w1}$, 0.05, is similar to that for $\beta_1$, 0.054.
+
+### (g)
+```{r 11.7 g}
+reg.var2 <- lm(resid(reg.wls1)^2~df$X)
+df$est.var2 <- as.numeric(reg.var2$fit)
+df$w2 <- 1/df$est.var2
+reg.wls2<-lm(Y~X, weights=w2, data=df)
+summary(reg.wls2)
+```
+
+The result for the second round of WLS is smillar to that for the first round. If there is a substantial change, i will iterate the WLS procedures until the model become stable.

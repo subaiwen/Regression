@@ -1,0 +1,66 @@
+---
+author: "ZhijianLiu"
+date: "9/6/2018"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### 1.20
+```{r echo=FALSE,results='hide'}
+df <- read.table("/Users/liubeixi/Desktop/regression/DataSets/Chapter  1 Data Sets/CH01PR20.txt")
+dim(df)
+colnames(df) <- c("Minutes","Copiers")
+summary(df)
+```
+##### a.
+```{r echo=FALSE}
+df_reg <- lm(Minutes~Copiers, data = df)
+summary(df_reg)
+#ls(df_reg)
+df_reg$coef
+```
+##### b.
+```{r echo=FALSE}
+plot(Minutes~Copiers,data=df, pch=16,main="Plot")
+abline(df_reg$coef)
+```
+##### c.
+
+
+##### d. predict Y when X=5
+```{r}
+predict(df_reg, newdata=data.frame(Copiers=5),se.fit=T,
+interval="confidence",level=0.95)
+```
+
+2.5
+##### a.
+```{r}
+confint(df_reg, "Copiers", level = 0.90)
+```
+
+#### b.
+```{r}
+t <- (15.03-0)/0.48
+p <- pt(t, df=43, lower.tail = FALSE)*2  #upper tail
+p
+p < 0.1
+```
+
+#### c.
+
+
+
+#### d.
+
+```{r}
+t <- (15.03-14)/0.48
+p <- pt(t, df=43, lower.tail = FALSE)  #upper tail
+p
+p < 0.05
+```

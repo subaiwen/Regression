@@ -1,0 +1,111 @@
+---
+title: "Homework#4"
+author: "ZhijianLiu"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+df <- read.table("/Users/liubeixi/Desktop/regression/DataSets/Chapter  1 Data Sets/CH01PR20.txt")
+colnames(df) <- c("Time", "Copiers")
+attach(df)
+```
+
+### 4.7
+#### a 
+#### Working-Hotelling procedure
+
+We have significance level $\alpha=1-0.9=0.1$, number of members in the family $g=3$, number of observations $n=45$.
+So the critical value $W=\sqrt{2F_{(0.9;2,43)}}=2.205$
+
+```{r 4.7a1}
+#regression model
+reg <- lm(Time~Copiers)
+arm::display(reg)
+sigma_hat <- predict(reg, newdata=data.frame(Copiers=c(3,5,7)), se.fit = T)$se.fit
+muy <- function(x){
+  as.numeric(cbind(1,x) %*% reg$coef)
+}
+#find mu_y
+mu_y_hat <- muy(c(3,5,7))
+#chart
+knitr::kable(data.frame('Copiers'=c(3,5,7),"mu"= mu_y_hat, 'sigma'= sigma_hat), digits =3)
+#find critical value
+alpha <- 1 - .9
+g <- 3
+n <- nrow(df)
+f <- qf(0.9,2,n-2, lower.tail = T)
+w <- sqrt(2*f)
+knitr::kable(cbind(c("$\\alpha$","g","n","W"),c(alpha,g,n,w)), digits =3)
+
+#CI
+lower_bound <- mu_y_hat - w*sigma_hat
+upper_bound <- mu_y_hat + w*sigma_hat
+knitr::kable(cbind(Copiers=c(3,5,7),lower_bound,upper_bound),digits =3)
+```
+
+Under the Working-Hotelling procedure, when there are 3,5 and 7 copiers to be serviced, the respective confidence intervals are (40.8326, 48.2185), (71.6642, 77.5280) and (101.1128, 108.2204).
+
+#### Bonferroni procedure
+
+```{r 4.7a2}
+alpha_ast <- alpha/g
+#find critical value
+t <- qt(1-alpha_ast/2, n-2)
+knitr::kable(cbind(c("$\\alpha$","g","n","t"),c(alpha,g,n,t)), digits =3)
+#CI
+lower_bound <- mu_y_hat - t*sigma_hat
+upper_bound <- mu_y_hat + t*sigma_hat
+knitr::kable(cbind(Copiers=c(3,5,7),lower_bound,upper_bound),digits =3)
+```
+
+The critical value here is $t_{0.983;43} = 2.198632$.
+Under the Bonferroni procedure, when there are 3,5 and 7 copiers to be serviced, the respective confidence intervals are (40.8429, 48.2083), (71.6723, 77.5199) and (101.1226, 108.2106).  
+Since critical value t < W, so the Bonferroni procedure produces narrower confidence interval.
+
+#### b
+
+The critical value for Scheffé procedure $S=\sqrt{2F_{(0.9;3,43)}}=2.204725$. It is greater than critical value under Bonferroni procedure $t_{0.975;43} = 2.016692$. So Bonferroni will provide tighter prediction limit.
+
+```{r 4.7b}
+g <- 2
+#find y_hat_ind
+y_hat_ind <- muy(c(4,7))
+#find 
+sigma_hat <- predict(reg, newdata=data.frame(Copiers=c(4,7)), se.fit = T)$se.fit
+sigma_ind_hat = sqrt(sigma_hat^2 + anova(reg)$'Mean Sq'[2])
+#chart
+knitr::kable(data.frame('Copiers' = c(4,7), 'mu' = y_hat_ind, 'sigma'= sigma_ind_hat), digits =3)
+```
+
+$\hat\sigma_{y_{ind}} = \sqrt{\hat\sigma_y^2 + MSE}$, so the estimated standards are 9.02797 and 9.05808.
+
+#### Bonferroni procedure
+```{r 4.7b1}
+alpha_ast <- alpha/g
+#find critical value
+t <- qt(1-alpha_ast/2, n-2)
+knitr::kable(cbind(c("$\\alpha$","g","n","t"),c(alpha,g,n,t)), digits =3)
+#CI
+lower_bound <- y_hat_ind - t*sigma_ind_hat
+upper_bound <- y_hat_ind + t*sigma_ind_hat
+knitr::kable(cbind(Copiers=c(4,7),lower_bound,upper_bound),digits =3)
+```
+
+Under the Bonferroni procedure, when the upcoming number of copiers to be serviced are 4 and 7, the respective prediction intervals are (41.3542, 77.7675) and (86.3992, 122.9339).
+
+#### Scheffé procedure
+#find critical value
+```{r 4.7b2}
+f <- qf(1-alpha,g,n-2, lower.tail = T)
+s <- sqrt(g*f)
+knitr::kable(cbind(c("$\\alpha$","g","n","S"),c(alpha,g,n,s)), digits =3)
+#CI
+lower_bound <- y_hat_ind - s*sigma_ind_hat
+upper_bound <- y_hat_ind + s*sigma_ind_hat
+knitr::kable(cbind(Copiers=c(4,7),lower_bound,upper_bound),digits =3)
+```
+
+Under the Scheffé procedure, when the upcoming number of copiers to be serviced are 4 and 7, the respective prediction intervals are (39.6566, 79.465) and (84.696, 124.637).

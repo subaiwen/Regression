@@ -1,0 +1,209 @@
+---
+title: "Homework#6"
+author: "ZhijianLiu"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(arm)
+```
+
+## 8.4
+```{r 8.4 read, include=FALSE}
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  1 Data Sets/CH01PR27.txt")
+colnames(df) <- c("Y","X")
+#a nutritionist randomly selected 15 women from each 10-year age group, beginning with age 40 and ending with age 79.
+#X: age
+#Y: a measure of muscle mass
+attach(df)
+```
+### (a)
+```{r 8.4 a, warning=F, echo=F}
+reg <- lm(Y~X+I(X^2))
+plot(Y~X,pch=16,main="Plot")
+curve(cbind(1,x,x^2) %*% reg$coef, add=T)
+display(reg)
+```
+
+The model is: $Y_i = \beta_0 +  \beta_1X_i +\beta_2X_i^2 + \xi_i$  
+In the plot, the regression line seems to be a good fit of the data. $R^2$ = 0.76.
+
+### (b)
+```{r 8.4 b, echo=FALSE}
+summary(reg)
+```
+
+$H_0$: $\beta_0=\beta_1=\beta_2=0$  
+$H_A$: ALOI  
+Significance level: $\alpha=0.05$  
+Decision rule: If p-value < 0.05, reject the null hypothesis and conclude that there is a regression relation.  
+If p-value > 0.05, do not reject the null hypothesis and conclude that there is no regression relation.  
+Conclusion: P-value of the test is less than $2.2 \cdot10^{-16}$, which is less than the significance level  $\alpha=0.05$. So we reject the null hypothesis and conclude that there is a regression relation in the model.  
+
+
+### (c)
+```{r 8.4 c, echo=F}
+predict(reg, newdata=data.frame(X=48),interval = "confidence", level = 0.95)
+```
+```{r 8.4 c backup, eval=F, include=F}
+alpha <- 0.05
+n <- nrow(df)
+sigma_hat <- predict(reg, newdata=data.frame(X=48), se.fit = T)$se.fit
+muy <- function(x){
+  as.numeric(cbind(1,x,x^2) %*% reg$coef)
+}
+t <- qt(1-alpha/2, n-2)
+mu_y_hat <- muy(48)
+#CI
+lower_bound <- mu_y_hat - t*sigma_hat
+upper_bound <- mu_y_hat + t*sigma_hat
+knitr::kable(cbind(Age=48, 'Muscle Mass'=mu_y_hat,lower_bound,upper_bound),digits =3)
+```
+
+The 95% confidence interval for muscle mass of women aged 48 years is (96.28436, 102.2249).
+
+### (d)
+```{r 8.4 d, echo=F}
+predict(reg, newdata=data.frame(X=48),interval = "prediction", level = 0.95)
+```
+
+The 95% prediction interval for muscle mass of women aged 48 years is (82.9116, 115.5976).
+
+### (e)
+```{r 8.4 e, echo=F}
+reg_reduce <- lm(Y~X)
+anova(reg_reduce, reg)#reduced first, full model followed
+#f <- anova(reg_reduce, reg)$F[2]
+#p_f <- anova(reg_reduce, reg)$Pr[2]
+```
+
+$H_0$: $\beta_2=0$  
+$H_A$: $\beta_2 \ne 0$  
+Significance level: $\alpha=0.05$  
+Decision rule: If p-value < 0.05, reject the null hypothesis and keep the quadratic term in the model.  
+If p-value > 0.05, do not reject the null hypothesis and drop the quadratic term.  
+Conclusion: P-value of the test is $0.08109>0.05$. So we fail to reject the null hypothesis of insignificant quadratic term. We need to drop the quadratic term.  
+
+
+## 8.25
+```{r 8.25 read, include=FALSE, warning=FALSE}
+rm(list=ls())
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  6 Data Sets/CH06PR09.txt")
+# i = 1,...,52. represents one week of activity in a one-year period.
+#X1: the number of cases shipped
+#X2: the indirect costs of the total labor hours as a percentage
+#X3: qualitative predicteor: coded as 1 if it is holiday, 0 otherwise.
+#Y: the total labor hours
+colnames(df) <- c("Y","X1","X2","X3")
+attach(df)
+```
+### (a)
+```{r 8.25 a, echo=F}
+X1_center <- X1-mean(X1)
+reg <- lm(Y~X1_center*as.factor(X3) + I(X1_center^2)*as.factor(X3))
+display(reg)
+```
+
+The model is: $Y_i = \beta_0 +  \beta_1X_{i1} + \beta_2X_{i1}^2 + \beta_3X_{i3} + \beta_4X_{i1}X_{i3} + \beta_5X_{i1}^2X_{i3} + \xi_i$, with $X_1$ centered. $X_1$ stands for the number of cases shipped and $X_{3}$ stands for the binary predicteor coded as 1 if it is holiday.
+
+### (b)
+```{r 8.25 b question, eval=F, include=F}
+Consider the following 2 cases separately.
+(1) Evaluate if the quadratic term can be dropped when the interaction terms are in the model. Note that when the quadratic term is dropped, the interaction term(s) built on the quadratic term should also be dropped. Hence, there will only be 1 interaction term left in the model.
+(2) Evaluate if the interaction terms and quadratic term can be dropped at the same time.
+
+```
+#### b (2)
+```{r 8.25 b (2), echo=F}
+reg_first <- lm(Y~X1_center + as.factor(X3)) #first order model
+display(reg_first)
+anova(reg_first,reg)#reduced first, full model followed
+```
+
+For the model: $Y_i = \beta_0 +  \beta_1X_{i1} + \beta_2X_{i1}^2 + \beta_3X_{i3} + \beta_4X_{i1}X_{i3} + \beta_5X_{i1}^2X_{i3} + \xi_i$, with $X_1$ centered, we do  
+$H_0$: $\beta_2=\beta_4=\beta_5=0$  
+$H_A$: ALOI 
+Significance level: $\alpha=0.05$  
+Decision rule: If p-value < 0.05, reject the null hypothesis and do not drop both the quadratic term and the interaction term in the model.  
+If p-value > 0.05, do not reject the null hypothesis and drop boht the quadratic term and the interaction term.  
+Conclusion: P-value of the test is $0.9954>0.05$. So we fail to reject the null hypothesis, and drop both the quadratic term and the interaction term in the model. 
+
+#### b (1)
+```{r 8.25 b (1), echo=F}
+#reg_interact <- lm(Y~X1_center*as.factor(X3)) 
+#model without quadratic
+#display(reg_interact)
+#anova(reg_interact,reg)
+#reduced first, full model followed
+summary(reg)
+```
+
+For the model: $Y_i = \beta_0 +  \beta_1X_{i1} + \beta_2X_{i1}^2 + \beta_3X_{i3} + \beta_4X_{i1}X_{i3} + \beta_5X_{i1}^2X_{i3} + \xi_i$, with $X_1$ centered, we do  
+$H_0$: $\beta_2=0$  
+$H_A$: $\beta_2\ne0$  
+Significance level: $\alpha=0.05$  
+Decision rule: If p-value < 0.05, reject the null hypothesis and keep both the quadratic term and the interaction term built on the quadratic term in the model.  
+If p-value > 0.05, do not reject the null hypothesis and drop both the quadratic term and the interaction term built on the quadratic term in the model.  
+Conclusion: P-value of the test is $0.804>0.05$. So we fail to reject the null hypothesis, and drop both the quadratic term and the interaction term built on the quadratic term in the model.  
+
+### (c)
+Including number of cases ($X_1$) in the regression can make the model more efficient. We know that $X_1$ is also a significant predictor of the total labor hours (Y). In other words, the total variation in Y can be partly explained by $X_1$. Including $X_1$ in the model can lead to preciser estimation or prediction.
+
+## 8.39
+```{r 8.39 read, include=FALSE, warning=FALSE}
+require(tidyverse)
+rm(list=ls())
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Appendix C Data Sets/APPENC02.txt") %>%
+  select(c(8,5,16,17))
+# i = 1,...,52. represents one week of activity in a one-year period.
+#X1: total population
+#X2: total personal income
+#Geographic region: 1=NE, 2=NC, 3=S, 4=W
+#X3, X4, X5: geographic region
+#Y: the number of active physician
+colnames(df) <- c("Y","X1","X2","region")
+attach(df)
+```
+### (a)
+```{r 8.39 a, echo=F}
+region <- as.factor(region)
+region <- relevel(region, ref="4")
+reg <- lm(Y ~ X1+X2+region)
+```
+
+The model is: $Y_i = \beta_0 +  \beta_1X_{i1} + \beta_2X_{i2} + \beta_3X_{i3} + \beta_4X_{i4} + \beta_5X_{i5} + \xi_i$ 
+
+### (b)
+```{r 8.39 b, echo=F}
+region <- as.factor(region)
+region <- relevel(region, ref="1")
+reg <- lm(Y ~ X1+X2+region)
+#construct CI
+n <- nrow(df)
+alpha <- 0.1
+p <- 6
+t <- qt(1-alpha/2, n-p)
+sigma_hat <- summary(reg)$coefficients[5, 2] #for region1 and region2
+lower_bound <- reg$coef[5] - t*sigma_hat
+upper_bound <- reg$coef[5] + t*sigma_hat
+knitr::kable(cbind(Region=c("NC"),lower_bound,upper_bound),digits =3)
+```
+
+With the northeastern region serving as the baseline, the 90% confidence interval for the north central region on number of active physicians is (-133.40206825676, 126.415816904037). The confidence interval includes 0, so the difference of the effect of the north central region and the effect of the north central region is not significant.
+
+### (c)
+```{r 8.39 c, echo=F}
+reg_reduce <- lm(Y ~ X1+X2)
+anova(reg_reduce,reg)#reduce first,full following
+```
+
+For the model: $Y_i = \beta_0 +  \beta_1X_{i1} + \beta_2X_{i2} + \beta_3X_{i3} + \beta_4X_{i4} + \beta_5X_{i5} + \xi_i$ , we do  
+$H_0$: $\beta_3=\beta_4=\beta_5=0$  
+$H_A$: ALOI  
+Significance level: $\alpha=0.05$  
+Decision rule: If p-value < 0.05, reject the null hypothesis and conclude that there is geographic effect in the model.  
+If p-value > 0.05, do not reject the null hypothesis and conclude that there no geographic effect in the model.   
+Conclusion: P-value of the test is $0.121>0.05$. So we fail to reject the null hypothesis, and safely draw the conclusion that there no geographic effect in the model.   
+
+

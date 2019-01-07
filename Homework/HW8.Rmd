@@ -1,0 +1,95 @@
+---
+title: "Homework#8"
+author: "Zhijian Liu"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F)
+library(car)
+```
+
+## 10.7
+```{r, include=F}
+df <- read.table("/Users/liubeixi/Desktop/Regression/DataSets/Chapter  6 Data Sets/CH06PR15.txt")
+#Y: patient satisfaction
+#X1: patient's age
+#X2: severity of illness
+#X3: anxiety level
+colnames(df) <- c("Y", "X1", "X2", "X3")
+```
+### (a)
+```{r 10.7 a}
+reg <- lm(Y~ X1 + X2 + X3, data = df)
+# added-variable plot (partial regression plot)
+avPlots(reg)
+```
+### (b)
+In the partial regression plot of Y vs X1, it appears to have a linear pattern. So including X1 could bring extra benefit to the model. While the could shape of the partial regression plots of Y vs X2 and Y vs X2 cannot tell the extra benefit of bring X2 or X3 into the model.
+
+## 10.11
+### (a)
+```{r 10.11 a, echo=T}
+t <- rstudent(reg)
+p <- 4
+n <- length(t)
+#Bernoulli
+a.star <- 0.1/n
+t.cri <- qt(1-a.star/2,n-p-1)
+t[abs(t) > t.cri]
+```
+
+Decision rules:
+If $|t_i| > t_{1-\alpha^*,41}$, then this $i^{th}$ case is a outlier.
+If $|t_i| < t_{1-\alpha^*,41}$, then this $i^{th}$ case is not a outlier.
+None of the cases have studentized deleted residual greater than the critical value, so no outlier is validated.
+
+### (b)
+```{r 10.11 b, echo=T}
+h <- hatvalues(reg)
+#outliers
+h
+h[h > 2*p/n]
+```
+
+The $9^{th}$, $28^{th}$ and $39^{th}$ observations have outlying X values.
+
+### (c)
+```{r 10.11 c, echo=T}
+reg1 <- lm(Y~ X1 + X2 + X3, data = df, x=T)
+designX<-reg1$x
+newX<-c(1, 30, 58, 2)
+leverage<-t(newX)%*%solve(t(designX)%*%designX)%*%newX
+leverage
+leverage %in% range(h)
+```
+
+The $h_{new,new}$ is not within the range of leverage value $h_{ii}$ for the cases in the data set.
+
+### (d)
+```{r 10.11 d, echo=T}
+#DFFITS
+DFFITS <- dffits(reg1)
+DFFITS[c(11,17,27)]
+#abs(DFFITS[c(11,17,27)]) > 2*sqrt(p/n) for large data set
+abs(DFFITS[c(11,17,27)]) > 1
+#DFBETAS
+DFBETAS <- dfbeta(reg1)
+DFBETAS[c(11,17,27),]
+#abs(DFBETAS[c(11,17,27),]) > 2/sqrt(n) for large data set
+abs(DFBETAS[c(11,17,27),]) > 1
+#Cook's distance
+D <- cooks.distance(reg1)
+D[c(11,17,27)]
+F <- qf(0.5, p, n-p)
+D[c(11,17,27)] > F
+```
+
+Since it is a relatively small data set, I use 1 to be compared with DFFITS and DFBETAS. The results of DFFITS shows no influential cases on $\hat {Y_i}$ among cases 11, 17 and 27. The results of Cook's distance shows neither cases 11, 17 nor 27 has influence on all of the $\hat {Y_i}'s$. The results of DFBETAS shows the $11^{th}$ case has influence on $\beta_0$ and $\beta_3$, the $17^{th}$ case has influence on $\beta_0$, and the $27^{th}$ case has influence on $\beta_3$.
+
+### (f)
+```{r 10.11 f}
+influenceIndexPlot(reg1, "Cook")
+```
+
+The $17^{th}$ and $30^{th}$ observations are outliers.
