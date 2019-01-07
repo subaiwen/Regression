@@ -1,0 +1,208 @@
+---
+title: "Project I"
+author: "Zhijian Liu"
+date: "12/9/2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+lapply(c("tidyverse", "leaflet", "maps", "mapdata", "ggmap", "lubridate","scales"), library, character.only=TRUE)
+```
+
+## R Markdown
+```{r read, include=F}
+#read data
+df <- read_csv("kc_house_data.csv")
+#tidy
+df$date <- ymd(df$date)
+df$zipcode <- df$zipcode %>% as.factor()
+```
+```{r label, echo = F}
+#label
+labels <-  c(id = "a notation for a house", date = "Date house was sold", price = "Price is prediction target",
+             bedrooms = "Number of Bedrooms/House", bathrooms = "Number of bathrooms/bedrooms", 
+             sqft_living = "square footage of the home", sqft_lot = "square footage of the lot",
+             floors = "Total floors (levels) in house", waterfront = "House which has a view to a waterfront",
+             view = "Has been viewed", condition = "How good the condition is ( Overall )",
+             grade = "overall grade given to the housing unit, based on King County grading system",
+             sqft_above = "square footage of house apart from basement", sqft_basement = "square footage of the basement",
+             yr_built= "Built Year", yr_renovated = "Year when house was renovated", zipcode= "zip",
+             lat = "Latitude coordinate", long = "Longitude coordinate", 
+sqft_living15 = "Living room area in 2015(implies--some renovations). This might or might not have affected the lotsize area", 
+             sqft_lot15= "lot Size area in 2015(implies-- some renovations)")
+df_ins <- df %>% select(-sqft_living15, -sqft_lot15, -zipcode)
+label <- labels[-c(17,20,21)]
+knitr::kable(data.frame('variable name' = names(df_ins), 'description' = unname(label)))
+```
+
+"y", "zip", "bedrooms", "bathrooms", "floors", "waterfront", "condition", "grade", "sqft_living15", "house_age", "renovated", "basement"
+
+# manipulation
+```{r house age}
+df <- df %>%
+  mutate(yr_sold = year(date)) %>%
+  mutate(house_age = yr_sold - yr_built)
+```
+```{r renovated}
+df %>%
+  ggplot(aes(yr_renovated)) +
+  geom_histogram(fill = "#ff5f00", alpha = 0.9, bins = 30) +
+  theme_dark()
+df <- df %>%
+  mutate(renovated = ifelse(yr_renovated==0,0,1))
+df %>%
+  ggplot(aes(as.factor(renovated))) +
+  #geom_bar(fill= "#ff5f00", alpha = 0.9) +
+  stat_count(fill= "#ff5f00", width = 0.3, alpha = 0.9) +
+  xlab("renovated") +
+  theme_dark()
+```
+```{r basement}
+df %>%
+  ggplot(aes(sqft_basement)) +
+  geom_histogram(fill = "#ff5f00", alpha = 0.9, bins = 30) +
+  theme_dark()
+df <- df %>%
+  mutate(basement = ifelse(sqft_basement==0,0,1))
+df %>%
+  ggplot(aes(as.factor(basement))) +
+  #geom_bar(fill= "#ff5f00", alpha = 0.9) +
+  stat_count(fill= "#ff5f00", width = 0.3, alpha = 0.9) +
+  xlab("basement") +
+  theme_dark()
+#price
+df %>% ggplot( aes(x=price)) + 
+  geom_density(alpha = .7, fill = "#ff5f00", color = "#999999")+
+  scale_y_continuous(labels = function(x) format(x, scientific = F))+
+  scale_x_continuous(labels = function(x) format(x, scientific = F))+
+  theme_dark()
+df %>% ggplot( aes(x=log(price))) + 
+  geom_density(alpha = .7, fill = "#ff5f00", color = "#999999")+
+  scale_y_continuous(labels = function(x) format(x, scientific = F))+
+  scale_x_continuous(labels = function(x) format(x, scientific = F))+
+  theme_dark()
+```
+
+## visualization
+```{r map}
+#set 
+#if(!requireNamespace("devtools")) install.packages("devtools")
+#devtools::install_github("dkahle/ggmap", ref = "tidyup")
+#ggmap(get_googlemap())
+#register_google(key = "my_google_key_here")
+#map
+#key<-"AIzaSyAG6IP0NIrxgUmjEhKWOty1GJrGl42mY5g"
+#register_google (key=key)
+#state
+ws.map.df <- map_data("county") %>% filter(region == "washington")
+ws_base <- ggplot(data = ws.map.df, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "#f6f6f6", fill = "#999999")
+#county
+#kc.map.df <- map_data("county") %>% filter(region == "washington") %>% filter(subregion == "king")
+#kc_base <- ggplot(data = kc.map.df, mapping = aes(x = long, y = lat)) + 
+  #coord_fixed(1.3) + 
+  #geom_polygon(color = "#999999", fill = "#f6f6f6")
+ws_base + 
+  theme_nothing() +
+  geom_point(data = df, aes(x = long+0.045, y = lat-0.01, group = log(price), color = log(price), alpha = log(price))) +
+  scale_color_gradient(low="#ffffff", high="#ff5f00") +
+  scale_alpha_continuous(range = c(0.1, 0.7)) +
+  coord_fixed(xlim= c(-123, -121), ylim = c(47, 48), ratio = 1.3) +
+  theme(plot.background = element_rect(fill = "#2dc1e1"))
+```
+
+```{r visualize}
+#price vs living area
+df %>% ggplot(aes(x=sqft_living15, y= price), color = "#ffffff") +
+  geom_hex(bins=50) +
+  scale_y_continuous(labels = function(x) format(x, scientific = F)) +
+  scale_fill_gradient(low="#fcb13e", high="#ff5f00") +
+  theme_dark()  +
+  xlab("living room area")
+df %>% ggplot(aes(x=log(sqft_living15), y= log(price))) +
+  geom_hex(bins=50) +
+  scale_y_continuous(labels = function(x) format(x, scientific = F)) +
+  scale_fill_gradient(low="#fcb13e", high="#ff5f00") +
+  theme_dark() +
+  xlab("log(living romm area)")
+#price vs house age 
+df %>% ggplot( aes(x=house_age)) + 
+  geom_density(alpha = .7, fill = "#ff5f00", color = "#999999")+
+  theme_dark()
+df %>% ggplot(aes(x=house_age, y= log(price)), color = "#ffffff") + 
+  geom_hex(bins=50) +
+  scale_fill_gradient(low="#fcb13e", high="#ff5f00") +
+  theme_dark()  +
+  xlab("house age")
+#price vs renovated
+df %>% ggplot(aes(x=as.factor(renovated), y= log(price), fill = as.factor(renovated)), color = "#ffffff") +
+  geom_boxplot() +
+  scale_fill_discrete(guide=FALSE) +
+  theme_dark() +
+  xlab("renovated")
+#house age vs renovated
+df %>% ggplot(aes(y=house_age, x= as.factor(renovated), fill = as.factor(renovated)), color = "#ffffff") +
+  geom_boxplot() +
+  theme_dark() +
+  ylab("house age") +
+  xlab("renovated")
+##################################################
+#price vs bathrooms
+df %>% ggplot(aes(x=as.factor(bathrooms), y= log(price), fill = as.factor(bathrooms)), color = "#ffffff") +
+  geom_boxplot() +
+  scale_fill_discrete(guide=FALSE) +
+  theme_dark() +
+  xlab("bathrooms")
+#price vs bedrooms
+df %>% ggplot(aes(x=as.factor(bedrooms), y= log(price), fill = as.factor(bedrooms)), color = "#ffffff") +
+  geom_boxplot() +
+  scale_fill_discrete(guide=FALSE) +
+  theme_dark() +
+  xlab("bedrooms")
+#bedroom vs bathroom
+df %>% ggplot(aes(x=bedrooms, y= bathrooms, color = as.factor(bathrooms))) +
+  geom_point(color = "#fcb13e") +
+  scale_fill_discrete(guide=FALSE) +
+  theme_dark()
+##################################################
+#price vs waterfront
+df %>% ggplot(aes(x=as.factor(waterfront), y= log(price), fill = as.factor(waterfront)), color = "#ffffff") +
+  geom_boxplot() +
+  scale_fill_discrete(guide=FALSE) +
+  theme_dark() +
+  xlab("waterfront")
+#price vs basement
+df %>% ggplot(aes(x=as.factor(basement), y= log(price), fill = as.factor(basement)), color = "#ffffff") +
+  geom_boxplot() +
+  scale_fill_discrete(guide=FALSE) +
+  theme_dark() +
+  xlab("basement")
+#price vs grade
+df %>% ggplot(aes(x = factor(1), fill = factor(grade))) +
+  geom_bar(width = 1) +
+  coord_polar(theta = "y") +
+  guides(fill=guide_legend(title="grade")) +
+  theme_void()
+df_sb <- df %>%
+  select(grade, waterfront , bedrooms, bathrooms) %>%
+  group_by(grade, waterfront, bedrooms, bathrooms) %>%
+  summarise(num = n()) %>%  
+  mutate(path = paste(paste0("grade: ",grade),
+                      paste0("Have waterfront: ", waterfront),
+                      paste0("Number of bedrooms: ", bedrooms),
+                      paste0("Number of bathrooms: ", bathrooms),
+         sep="-")) %>%
+  ungroup() %>%
+  select(path, num)
+df_sb %>% 
+  sunburstR::sunburst()
+df %>% ggplot(aes(x=as.factor(grade), y= log(price), fill = as.factor(grade)), color = "#ffffff") +
+  geom_boxplot() +
+  scale_fill_discrete(guide=FALSE) +
+  xlab("grade") +
+  theme_dark()
+```
